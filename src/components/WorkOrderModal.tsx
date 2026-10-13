@@ -55,34 +55,37 @@ export const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto no-print">
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl relative my-8 text-slate-200">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 backdrop-blur-sm overflow-y-auto no-print">
+      <div className="bg-slate-900 border-t sm:border border-slate-800 rounded-t-3xl sm:rounded-2xl max-w-2xl w-full p-4 sm:p-8 shadow-2xl relative my-0 sm:my-8 text-slate-200 max-h-[92vh] sm:max-h-none overflow-y-auto">
+        {/* Mobile Drag Indicator */}
+        <div className="w-10 h-1.5 bg-slate-700/80 rounded-full mx-auto mb-3 sm:hidden" />
+
         {/* Top Actions in Modal */}
-        <div className="flex items-center justify-between pb-4 border-b border-slate-800 no-print">
+        <div className="flex items-center justify-between pb-4 border-b border-slate-800 no-print gap-2">
           <div className="flex items-center gap-2">
             <span className="text-xs font-mono text-amber-500 font-bold">{service.id}</span>
             <span className="text-slate-600">·</span>
             {getStatusBadge(service.status)}
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             <button
               onClick={() => onEdit(service)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-300 hover:text-white bg-slate-800 rounded-md transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-300 hover:text-white bg-slate-800 rounded-lg transition-colors min-h-[36px] cursor-pointer"
             >
               <Edit3 className="w-3.5 h-3.5" />
-              Editar
+              <span className="hidden xs:inline">Editar</span>
             </button>
             <button
               onClick={handlePrint}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-950 bg-amber-500 hover:bg-amber-400 rounded-md transition-colors font-semibold"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-950 bg-amber-500 hover:bg-amber-400 rounded-lg transition-colors font-semibold min-h-[36px] cursor-pointer"
             >
               <Printer className="w-3.5 h-3.5" />
-              Imprimir
+              <span>Imprimir</span>
             </button>
             <button
               onClick={onClose}
-              className="text-slate-400 hover:text-white p-1 transition-colors"
+              className="text-slate-400 hover:text-white p-2 min-h-[36px] min-w-[36px] flex items-center justify-center transition-colors cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>

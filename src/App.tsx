@@ -28,6 +28,7 @@ import { ServiceList } from './components/ServiceList';
 import { ServiceForm } from './components/ServiceForm';
 import { WorkOrderModal } from './components/WorkOrderModal';
 import { ConfirmModal } from './components/ConfirmModal';
+import { MobileBottomNav } from './components/MobileBottomNav';
 import { CheckCircle2, AlertCircle, Info, X } from 'lucide-react';
 
 export default function App() {
@@ -447,7 +448,7 @@ export default function App() {
       />
 
       {/* Main Content Viewport */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 lg:px-8 py-6">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 pb-24 md:pb-8">
         {/* Status Banner */}
         <SheetStatusBanner
           sheetInfo={sheetInfo}
@@ -488,8 +489,22 @@ export default function App() {
         )}
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-slate-800/80 bg-[#080c13] py-5 px-4 lg:px-8 text-center text-xs text-slate-500 no-print">
+      {/* Mobile Fixed Bottom Navigation Bar (Smartphones/Touch) */}
+      <MobileBottomNav
+        currentView={currentView}
+        onViewChange={(view) => {
+          if (view === 'new') {
+            setEditingService(null);
+          }
+          setCurrentView(view);
+        }}
+        sheetInfo={sheetInfo}
+        onSync={handleManualSync}
+        isSyncing={isSyncing}
+      />
+
+      {/* Footer (Desktop/Tablet) */}
+      <footer className="border-t border-slate-800/80 bg-[#080c13] py-5 px-4 lg:px-8 text-center text-xs text-slate-500 no-print hidden md:block">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
           <span>AutoTaller OS · Sistema de Gestión de Servicios Automotrices</span>
           <span className="flex items-center gap-1.5">

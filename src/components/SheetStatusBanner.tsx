@@ -40,10 +40,10 @@ export const SheetStatusBanner: React.FC<SheetStatusBannerProps> = ({
           </div>
           <button
             onClick={onConnect}
-            className="flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-semibold rounded-lg shadow-sm transition-all whitespace-nowrap self-end sm:self-auto cursor-pointer"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold rounded-xl shadow-sm transition-all whitespace-nowrap min-h-[44px] cursor-pointer"
           >
             <ShieldCheck className="w-4 h-4" />
-            Vincular Hoja en Google Drive
+            <span>Vincular Hoja en Google Drive</span>
           </button>
         </div>
       </div>
@@ -71,7 +71,7 @@ export const SheetStatusBanner: React.FC<SheetStatusBannerProps> = ({
           )}
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end pt-1 sm:pt-0">
           {syncError && (
             <span className="flex items-center gap-1 text-rose-400 text-[11px] mr-2">
               <AlertTriangle className="w-3.5 h-3.5" />
@@ -84,11 +84,11 @@ export const SheetStatusBanner: React.FC<SheetStatusBannerProps> = ({
               href={sheetInfo.folderUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1.5 px-2.5 py-1 text-slate-300 hover:text-white bg-slate-800/80 hover:bg-slate-700/80 rounded border border-slate-700 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-slate-300 hover:text-white bg-slate-800/80 hover:bg-slate-700/80 rounded-lg border border-slate-700 transition-colors min-h-[36px]"
               title="Abrir carpeta en Google Drive"
             >
-              <Folder className="w-3 h-3 text-amber-400" />
-              <span>Carpeta: {sheetInfo.folderName || 'AutoTaller OS'}</span>
+              <Folder className="w-3.5 h-3.5 text-amber-400" />
+              <span>Carpeta Drive</span>
             </a>
           )}
 
@@ -96,18 +96,18 @@ export const SheetStatusBanner: React.FC<SheetStatusBannerProps> = ({
             href={sheetInfo.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-1 px-2.5 py-1 text-slate-300 hover:text-white bg-slate-800/80 hover:bg-slate-700/80 rounded border border-slate-700 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-slate-300 hover:text-white bg-slate-800/80 hover:bg-slate-700/80 rounded-lg border border-slate-700 transition-colors min-h-[36px]"
           >
-            <ExternalLink className="w-3 h-3" />
+            <ExternalLink className="w-3.5 h-3.5" />
             <span>Ver Hoja</span>
           </a>
 
           <button
             onClick={onSync}
             disabled={isSyncing}
-            className="flex items-center gap-1.5 px-2.5 py-1 text-amber-400 hover:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 rounded border border-amber-500/30 transition-colors disabled:opacity-50"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-amber-400 hover:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 rounded-lg border border-amber-500/30 transition-colors disabled:opacity-50 min-h-[36px] cursor-pointer"
           >
-            <RefreshCw className={`w-3 h-3 ${isSyncing ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
             <span>{isSyncing ? 'Sincronizando...' : 'Actualizar'}</span>
           </button>
         </div>
