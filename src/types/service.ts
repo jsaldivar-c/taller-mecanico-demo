@@ -31,6 +31,9 @@ export interface GoogleSheetInfo {
   id: string;
   title: string;
   url: string;
+  folderId?: string;
+  folderName?: string;
+  folderUrl?: string;
   lastSyncedAt?: string;
 }
 

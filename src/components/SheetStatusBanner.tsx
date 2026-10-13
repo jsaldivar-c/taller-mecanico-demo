@@ -1,5 +1,5 @@
 import React from 'react';
-import { FileSpreadsheet, ExternalLink, RefreshCw, CheckCircle2, AlertTriangle, ShieldCheck } from 'lucide-react';
+import { FileSpreadsheet, ExternalLink, RefreshCw, CheckCircle2, AlertTriangle, ShieldCheck, Folder } from 'lucide-react';
 import { GoogleSheetInfo } from '../types/service';
 
 interface SheetStatusBannerProps {
@@ -77,6 +77,19 @@ export const SheetStatusBanner: React.FC<SheetStatusBannerProps> = ({
               <AlertTriangle className="w-3.5 h-3.5" />
               {syncError}
             </span>
+          )}
+
+          {sheetInfo.folderUrl && (
+            <a
+              href={sheetInfo.folderUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 px-2.5 py-1 text-slate-300 hover:text-white bg-slate-800/80 hover:bg-slate-700/80 rounded border border-slate-700 transition-colors"
+              title="Abrir carpeta en Google Drive"
+            >
+              <Folder className="w-3 h-3 text-amber-400" />
+              <span>Carpeta: {sheetInfo.folderName || 'AutoTaller OS'}</span>
+            </a>
           )}
 
           <a

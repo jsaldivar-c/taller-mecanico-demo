@@ -13,6 +13,7 @@ import {
   getServicesFromSheet,
   appendServiceToSheet,
   updateServiceInSheet,
+  formatAllExistingRows,
 } from './services/sheetsService';
 import {
   loadLocalServices,
@@ -112,6 +113,16 @@ export default function App() {
         setSheetInfo(updatedInfo);
         saveSheetInfo(updatedInfo);
         sheetInfoRef.current = updatedInfo;
+
+        // Apply clean formatting (height 25px, white background, no bold) to all existing rows
+        if (remoteServices.length > 0) {
+          try {
+            await formatAllExistingRows(currentSheet.id, token, remoteServices.length);
+          } catch (formatErr) {
+            console.warn('Error aplicando formato a filas existentes:', formatErr);
+          }
+        }
+
         showToast('Datos sincronizados con Google Sheets correctamente', 'success');
       } catch (err: any) {
         console.error('Error al sincronizar con Sheets:', err);
@@ -149,6 +160,9 @@ export default function App() {
           id: sheet.id,
           title: sheet.title,
           url: sheet.url,
+          folderId: sheet.folderId,
+          folderName: sheet.folderName,
+          folderUrl: sheet.folderUrl,
           lastSyncedAt: new Date().toISOString(),
         };
         setSheetInfo(info);

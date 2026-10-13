@@ -97,9 +97,113 @@ const serviceToRow = (service: WorkshopService): (string | number)[] => {
   ];
 };
 
+export const WORKSHOP_FOLDER_NAME = 'AutoTaller OS';
+
+export const getOrCreateWorkshopFolder = async (
+  token: string,
+  folderName = WORKSHOP_FOLDER_NAME
+): Promise<{ id: string; name: string; url: string }> => {
+  try {
+    const q = encodeURIComponent(
+      `name = '${folderName}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`
+    );
+    const searchRes = await fetch(
+      `https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name,webViewLink)&pageSize=1`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+
+    if (searchRes.ok) {
+      const data = await searchRes.json();
+      if (data.files && data.files.length > 0) {
+        const folder = data.files[0];
+        return {
+          id: folder.id,
+          name: folder.name,
+          url: folder.webViewLink || `https://drive.google.com/drive/folders/${folder.id}`,
+        };
+      }
+    }
+
+    // Create the folder in Google Drive
+    const createRes = await fetch('https://www.googleapis.com/drive/v3/files', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        name: folderName,
+        mimeType: 'application/vnd.google-apps.folder',
+      }),
+    });
+
+    if (createRes.ok) {
+      const folder = await createRes.json();
+      return {
+        id: folder.id,
+        name: folderName,
+        url: `https://drive.google.com/drive/folders/${folder.id}`,
+      };
+    }
+  } catch (err) {
+    console.warn('Error al gestionar carpeta en Google Drive:', err);
+  }
+
+  return { id: '', name: folderName, url: '' };
+};
+
+export const moveFileToFolder = async (
+  token: string,
+  fileId: string,
+  folderId: string
+): Promise<void> => {
+  if (!folderId || !fileId) return;
+  try {
+    const fileRes = await fetch(
+      `https://www.googleapis.com/drive/v3/files/${fileId}?fields=parents`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+
+    let previousParents = '';
+    if (fileRes.ok) {
+      const fileData = await fileRes.json();
+      if (fileData.parents && Array.isArray(fileData.parents)) {
+        if (fileData.parents.includes(folderId)) return;
+        previousParents = fileData.parents.join(',');
+      }
+    }
+
+    const patchUrl = previousParents
+      ? `https://www.googleapis.com/drive/v3/files/${fileId}?addParents=${folderId}&removeParents=${previousParents}&fields=id,parents`
+      : `https://www.googleapis.com/drive/v3/files/${fileId}?addParents=${folderId}&fields=id,parents`;
+
+    await fetch(patchUrl, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  } catch (err) {
+    console.warn('Error moviendo archivo a carpeta en Google Drive:', err);
+  }
+};
+
 export const createWorkshopSpreadsheet = async (
-  token: string
-): Promise<{ id: string; title: string; url: string }> => {
+  token: string,
+  folderName = WORKSHOP_FOLDER_NAME
+): Promise<{
+  id: string;
+  title: string;
+  url: string;
+  folderId?: string;
+  folderName?: string;
+  folderUrl?: string;
+}> => {
+  // 1. Ensure folder exists in Drive
+  const folder = await getOrCreateWorkshopFolder(token, folderName);
+
   const response = await fetch('https://sheets.googleapis.com/v4/spreadsheets', {
     method: 'POST',
     headers: {
@@ -149,7 +253,7 @@ export const createWorkshopSpreadsheet = async (
     }
   );
 
-  // Format headers (dark industrial background, white bold text)
+  // Format headers: clean light background, NO bold, black text, and 25px height
   try {
     await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}:batchUpdate`, {
       method: 'POST',
@@ -159,6 +263,21 @@ export const createWorkshopSpreadsheet = async (
       },
       body: JSON.stringify({
         requests: [
+          // Set header row height to 25px
+          {
+            updateDimensionProperties: {
+              range: {
+                sheetId: sheetId,
+                dimension: 'ROWS',
+                startIndex: 0,
+                endIndex: 1,
+              },
+              properties: {
+                pixelSize: 25,
+              },
+              fields: 'pixelSize',
+            },
+          },
           {
             repeatCell: {
               range: {
@@ -170,35 +289,52 @@ export const createWorkshopSpreadsheet = async (
               },
               cell: {
                 userEnteredFormat: {
-                  backgroundColor: { red: 0.08, green: 0.12, blue: 0.18 }, // Dark slate #141f2e
+                  backgroundColor: { red: 0.95, green: 0.96, blue: 0.98 },
                   textFormat: {
-                    foregroundColor: { red: 1, green: 1, blue: 1 },
-                    bold: true,
+                    foregroundColor: { red: 0.1, green: 0.1, blue: 0.1 },
+                    bold: false,
                     fontSize: 10,
                   },
                   horizontalAlignment: 'CENTER',
+                  verticalAlignment: 'MIDDLE',
                 },
               },
-              fields: 'userEnteredFormat(backgroundColor,textFormat,horizontalAlignment)',
+              fields: 'userEnteredFormat(backgroundColor,textFormat,horizontalAlignment,verticalAlignment)',
             },
           },
         ],
       }),
     });
   } catch (err) {
-    console.warn('No se pudo aplicar el formato estilizado a la cabecera:', err);
+    console.warn('No se pudo aplicar el formato a la cabecera:', err);
+  }
+
+  // 2. Move file inside dedicated folder
+  if (folder.id) {
+    await moveFileToFolder(token, spreadsheetId, folder.id);
   }
 
   return {
     id: spreadsheetId,
     title: SHEET_TITLE,
     url: `https://docs.google.com/spreadsheets/d/${spreadsheetId}`,
+    folderId: folder.id,
+    folderName: folder.name,
+    folderUrl: folder.url,
   };
 };
 
 export const findExistingSpreadsheet = async (
-  token: string
-): Promise<{ id: string; title: string; url: string } | null> => {
+  token: string,
+  folderName = WORKSHOP_FOLDER_NAME
+): Promise<{
+  id: string;
+  title: string;
+  url: string;
+  folderId?: string;
+  folderName?: string;
+  folderUrl?: string;
+} | null> => {
   try {
     const q = encodeURIComponent(
       `name = '${SHEET_TITLE}' and mimeType = 'application/vnd.google-apps.spreadsheet' and trashed = false`
@@ -218,10 +354,18 @@ export const findExistingSpreadsheet = async (
     const data = await res.json();
     if (data.files && data.files.length > 0) {
       const file = data.files[0];
+      const folder = await getOrCreateWorkshopFolder(token, folderName);
+      if (folder.id) {
+        // Move existing sheet into folder if it was in root
+        await moveFileToFolder(token, file.id, folder.id);
+      }
       return {
         id: file.id,
         title: file.name,
         url: file.webViewLink || `https://docs.google.com/spreadsheets/d/${file.id}`,
+        folderId: folder.id,
+        folderName: folder.name,
+        folderUrl: folder.url,
       };
     }
   } catch (err) {
@@ -305,6 +449,156 @@ export const getServicesFromSheet = async (
   return services;
 };
 
+let cachedSheetTabId: number | null = null;
+
+export const getSheetTabId = async (spreadsheetId: string, token: string): Promise<number> => {
+  if (cachedSheetTabId !== null) return cachedSheetTabId;
+  try {
+    const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}?fields=sheets.properties`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (res.ok) {
+      const data = await res.json();
+      const tab = data.sheets?.find((s: any) => s.properties?.title === TAB_NAME) || data.sheets?.[0];
+      if (tab?.properties?.sheetId !== undefined) {
+        const id = Number(tab.properties.sheetId);
+        cachedSheetTabId = id;
+        return id;
+      }
+    }
+  } catch (err) {
+    console.warn('Error obteniendo sheetTabId:', err);
+  }
+  return 0;
+};
+
+export const formatSheetRow = async (
+  spreadsheetId: string,
+  token: string,
+  rowNumber: number
+): Promise<void> => {
+  try {
+    const sheetTabId = await getSheetTabId(spreadsheetId, token);
+    const startRowIndex = rowNumber - 1; // 0-indexed
+
+    await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}:batchUpdate`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        requests: [
+          // Set row height to 25px
+          {
+            updateDimensionProperties: {
+              range: {
+                sheetId: sheetTabId,
+                dimension: 'ROWS',
+                startIndex: startRowIndex,
+                endIndex: startRowIndex + 1,
+              },
+              properties: {
+                pixelSize: 25,
+              },
+              fields: 'pixelSize',
+            },
+          },
+          // Format cells: white background (no black background), NO bold, normal 10pt text, middle vertical alignment
+          {
+            repeatCell: {
+              range: {
+                sheetId: sheetTabId,
+                startRowIndex: startRowIndex,
+                endRowIndex: startRowIndex + 1,
+                startColumnIndex: 0,
+                endColumnIndex: HEADERS.length,
+              },
+              cell: {
+                userEnteredFormat: {
+                  backgroundColor: { red: 1, green: 1, blue: 1 },
+                  textFormat: {
+                    foregroundColor: { red: 0, green: 0, blue: 0 },
+                    bold: false,
+                    fontSize: 10,
+                  },
+                  verticalAlignment: 'MIDDLE',
+                },
+              },
+              fields: 'userEnteredFormat(backgroundColor,textFormat,verticalAlignment)',
+            },
+          },
+        ],
+      }),
+    });
+  } catch (err) {
+    console.warn('Error al formatear fila con altura 25 en Google Sheets:', err);
+  }
+};
+
+export const formatAllExistingRows = async (
+  spreadsheetId: string,
+  token: string,
+  rowCount: number
+): Promise<void> => {
+  if (rowCount <= 0) return;
+  try {
+    const sheetTabId = await getSheetTabId(spreadsheetId, token);
+    await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}:batchUpdate`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        requests: [
+          // Set all rows (from 0 to rowCount + 5) to 25px height
+          {
+            updateDimensionProperties: {
+              range: {
+                sheetId: sheetTabId,
+                dimension: 'ROWS',
+                startIndex: 0,
+                endIndex: Math.max(rowCount + 5, 20),
+              },
+              properties: {
+                pixelSize: 25,
+              },
+              fields: 'pixelSize',
+            },
+          },
+          // Format all data rows (starting from row 1) with white background, NO bold, black text
+          {
+            repeatCell: {
+              range: {
+                sheetId: sheetTabId,
+                startRowIndex: 1,
+                endRowIndex: Math.max(rowCount + 1, 20),
+                startColumnIndex: 0,
+                endColumnIndex: HEADERS.length,
+              },
+              cell: {
+                userEnteredFormat: {
+                  backgroundColor: { red: 1, green: 1, blue: 1 },
+                  textFormat: {
+                    foregroundColor: { red: 0, green: 0, blue: 0 },
+                    bold: false,
+                    fontSize: 10,
+                  },
+                  verticalAlignment: 'MIDDLE',
+                },
+              },
+              fields: 'userEnteredFormat(backgroundColor,textFormat,verticalAlignment)',
+            },
+          },
+        ],
+      }),
+    });
+  } catch (err) {
+    console.warn('Error al formatear rango de filas en Google Sheets:', err);
+  }
+};
+
 export const appendServiceToSheet = async (
   spreadsheetId: string,
   token: string,
@@ -332,9 +626,15 @@ export const appendServiceToSheet = async (
   }
 
   const result = await res.json();
-  // result.updates.updatedRange format: "Servicios!A12:N12"
   const match = result.updates?.updatedRange?.match(/![A-Z]+(\d+):/);
-  return match ? parseInt(match[1], 10) : 0;
+  const rowNumber = match ? parseInt(match[1], 10) : 0;
+
+  // Format row: 25px height, white background, no bold
+  if (rowNumber > 0) {
+    await formatSheetRow(spreadsheetId, token, rowNumber);
+  }
+
+  return rowNumber;
 };
 
 export const updateServiceInSheet = async (
@@ -363,4 +663,7 @@ export const updateServiceInSheet = async (
     const errorText = await res.text();
     throw new Error(`Error al actualizar servicio en Google Sheets: ${res.status} - ${errorText}`);
   }
+
+  // Format row: 25px height, white background, no bold
+  await formatSheetRow(spreadsheetId, token, rowNumber);
 };
