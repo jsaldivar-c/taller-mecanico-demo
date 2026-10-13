@@ -1,0 +1,6 @@
+{
+  "summary": "Plan de implementación para la aplicación web de gestión de servicios de taller automotriz (AutoTaller OS). Cubre registro completo de servicios con cliente, vehículo, placa, fecha, procedimiento y productos utilizados, además de desglose de costos y estados. Incluye sincronización bidireccional con Google Sheets (creación automática en Google Drive, lectura, actualización y edición), interfaz profesional de estilo industrial oscuro, y buscador/filtros de historial.",
+  "updatedAt": "2026-10-13T01:59:50.013181171Z",
+  "requestFeedback": true,
+  "userFacing": true
+}

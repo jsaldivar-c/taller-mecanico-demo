@@ -1,0 +1,6 @@
+{
+  "name": "AutoTaller OS - Gestión de Servicios",
+  "description": "Sistema de gestión de servicios para taller automotriz con registro de clientes, vehículos, procedimientos, productos y sincronización con Google Sheets.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
